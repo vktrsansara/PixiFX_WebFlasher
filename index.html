@@ -111,7 +111,7 @@
                 <h2 class="step-title">Подключение контроллера ESP32-S3</h2>
               </div>
               <p class="step-desc">
-                Подключите ваш контроллер ESP32-S3 (Zero) к компьютеру через кабель USB-C и нажмите кнопку подключения.
+                Подключите ваш контроллер ESP32-S3 Zero к компьютеру через кабель USB-C и нажмите кнопку подключения.
               </p>
             </div>
 
@@ -183,9 +183,6 @@
                 <span class="step-tag">Шаг 2 из 4</span>
                 <h2 class="step-title">Загрузка прошивки и файловой системы</h2>
               </div>
-              <p class="step-desc">
-                Прошивка и файлы веб-интерфейса будут автоматически загружены с сервера и записаны во Flash-память контроллера в соответствии с таблицей разделов.
-              </p>
             </div>
 
             <!-- Список прошиваемых разделов -->
@@ -197,7 +194,7 @@
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--pink-neon);">
                       <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
                     </svg>
-                    <span>Прошивка микроконтроллера (firmware.bin)</span>
+                    <span>Прошивка микроконтроллера </span>
                   </div>
                   <span class="progress-pct" id="pct-firmware">0%</span>
                 </div>
@@ -219,7 +216,7 @@
                       <polyline points="2 17 12 22 22 17"></polyline>
                       <polyline points="2 12 12 17 22 12"></polyline>
                     </svg>
-                    <span>Файловая система (littlefs.bin)</span>
+                    <span>Файловая система</span>
                   </div>
                   <span class="progress-pct" id="pct-fs">0%</span>
                 </div>
@@ -273,9 +270,6 @@
                 <span class="step-tag">Шаг 3 из 4</span>
                 <h2 class="step-title">Настройка Wi-Fi подключения</h2>
               </div>
-              <p class="step-desc">
-                Передайте параметры вашей Wi-Fi сети прямо в контроллер через Improv Serial или воспользуйтесь резервной точкой доступа.
-              </p>
             </div>
 
             <div class="wifi-setup-container">
@@ -300,7 +294,7 @@
                     <div class="settings-control">
                       <div class="input-with-action">
                         <select id="wifi-scan-select" class="form-select" style="display: none; flex: 1;">
-                          <option value="">Выберите сеть...</option>
+                          <option value="">Выберите найденную сеть...</option>
                         </select>
                         <button type="button" class="btn-refresh-devices" id="btn-scan-wifi" style="white-space: nowrap;">
                           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -367,7 +361,7 @@
                   <span>Альтернативная настройка через точку доступа (Access Point):</span>
                 </div>
                 <div style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5;">
-                  Если вдруг возникла проблема с настройкой Wi-Fi через браузер, найдите со смартфона или ПК беспроводную сеть контроллера:
+                  Если возникли проблемы с настройкой Wi-Fi через Improv Serial, найдите со смартфона или ПК беспроводную сеть контроллера:
                 </div>
                 <div class="ap-highlight-box">
                   <div>

@@ -489,8 +489,8 @@ async function flashDevice() {
 // -------------------------------------------------------------
 
 // Инициализация Improv Serial соединения после перезагрузки
-async function initImprovSerial() {
-  if (state.improvConnected && state.improvWriter && state.port?.writable) {
+async function initImprovSerial(forceUserPrompt = false) {
+  if (!forceUserPrompt && state.improvConnected && state.improvWriter && state.port?.writable) {
     return true;
   }
 
@@ -518,15 +518,24 @@ async function initImprovSerial() {
     } catch (e) {
       // Игнорируем ошибки уже закрытого порта
     }
+    if (forceUserPrompt) {
+      state.port = null;
+    }
   }
 
   // 3. Получаем доступный COM-порт
   try {
-    const ports = await navigator.serial.getPorts();
-    if (ports.length > 0) {
-      state.port = ports[ports.length - 1];
-    } else {
+    if (forceUserPrompt) {
+      logTerminal("Запрос выбора COM-порта через Web Serial...");
       state.port = await navigator.serial.requestPort();
+    } else {
+      const ports = await navigator.serial.getPorts();
+      if (ports.length > 0) {
+        state.port = ports[ports.length - 1];
+      } else {
+        logTerminal("Запрос выбора COM-порта через Web Serial...");
+        state.port = await navigator.serial.requestPort();
+      }
     }
   } catch (err) {
     logTerminal(`Запрос порта: ${err.message}`, "warn");
@@ -1011,7 +1020,7 @@ ui.btnToggleWifiPass.addEventListener("click", () => {
 // --- Обработчики режима «Настройка Wi-Fi» ---
 if (ui.btnWifiOnlyConnect) {
   ui.btnWifiOnlyConnect.addEventListener("click", async () => {
-    const ok = await initImprovSerial();
+    const ok = await initImprovSerial(true);
     if (ok) {
       if (ui.wifiOnlyConnectBlock) ui.wifiOnlyConnectBlock.style.display = "none";
       if (ui.wifiOnlyDeviceInfo) ui.wifiOnlyDeviceInfo.style.display = "grid";
