@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <!-- Неоновое свечение для звезды -->
+    <filter id="starGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="0" stdDeviation="1.8" flood-color="#ff2a85" flood-opacity="0.9"/>
+      <feDropShadow dx="0" dy="0" stdDeviation="3.5" flood-color="#ff2a85" flood-opacity="0.5"/>
+    </filter>
+    <!-- Свечение для рамки -->
+    <filter id="boxGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="0" stdDeviation="1.2" flood-color="#ff2a85" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+
+  <!-- Темный фон иконки -->
+  <rect x="2" y="2" width="28" height="28" rx="8" fill="#14081c"/>
+  <rect x="2" y="2" width="28" height="28" rx="8" fill="#ff2a85" fill-opacity="0.12"/>
+
+  <!-- Неоновая рамка (как у .brand-icon-wrapper) -->
+  <rect x="2.5" y="2.5" width="27" height="27" rx="7.5" fill="none" stroke="#ff2a85" stroke-width="1.5" stroke-opacity="0.65" filter="url(#boxGlow)"/>
+
+  <!-- Звезда (как .icon-brand) -->
+  <g transform="translate(4, 4.5)">
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+             fill="#ff3399" stroke="#ff3399" stroke-width="0.8" stroke-linejoin="round"
+             filter="url(#starGlow)"/>
+  </g>
+</svg>

@@ -1,0 +1,634 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PixiFX Web Flasher — ESP32-S3</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- Фоновая неоновая плазма -->
+    <div class="plasma-bg">
+      <div class="plasma-blob blob-1"></div>
+      <div class="plasma-blob blob-2"></div>
+      <div class="plasma-blob blob-3"></div>
+    </div>
+
+    <div class="app-container">
+      <!-- Шапка интерфейса (полное соответствие data_src) -->
+      <header class="app-header">
+        <div class="header-left">
+          <div class="brand-group" id="brand-ping" title="PixiFX Web Flasher">
+            <div class="brand-icon-wrapper">
+              <svg
+                class="icon-brand"
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polygon
+                  points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                ></polygon>
+              </svg>
+            </div>
+            <span class="brand-title">PixiFX Web Flasher</span>
+          </div>
+        </div>
+
+        <!-- Центральный блок вкладок (40% ширины, стиль data_src) -->
+        <nav class="header-center-nav">
+          <!-- 1. Полная установка -->
+          <button class="nav-tab active" id="tab-full-wizard" data-tab="wizard" title="Полная установка">
+            <svg class="tab-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+            <span class="tab-label">Установка</span>
+          </button>
+
+          <!-- 2. Настройка Wi-Fi -->
+          <button class="nav-tab" id="tab-wifi-only" data-tab="wifi" title="Настройка Wi-Fi">
+            <svg class="tab-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 12.55a11 11 0 0 1 14.08 0"></path>
+              <path d="M1.42 9a16 16 0 0 1 21.16 0"></path>
+              <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+              <line x1="12" y1="20" x2="12.01" y2="20"></line>
+            </svg>
+            <span class="tab-label">Wi-Fi</span>
+          </button>
+        </nav>
+
+        <!-- Правая часть шапки (30% ширины) -->
+        <div class="header-right">
+          <div class="status-badge offline" id="global-serial-status">
+            <span class="status-dot"></span>
+            <span id="global-serial-text">OFFLINE</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Рабочая область / Контент (стиль desktop-workspace data_src) -->
+      <main class="app-body">
+        <div class="desktop-workspace">
+          <!-- Пошаговый навигатор (для режима «Установка») -->
+          <nav class="steps-wizard-nav" id="steps-nav-bar">
+            <div class="step-indicator active" id="step-nav-1">
+              <div class="step-circle">1</div>
+              <span class="step-name">Подключение</span>
+            </div>
+            <div class="step-line" id="line-1"></div>
+
+            <div class="step-indicator" id="step-nav-2">
+              <div class="step-circle">2</div>
+              <span class="step-name">Прошивка</span>
+            </div>
+            <div class="step-line" id="line-2"></div>
+
+            <div class="step-indicator" id="step-nav-3">
+              <div class="step-circle">3</div>
+              <span class="step-name">Wi-Fi</span>
+            </div>
+            <div class="step-line" id="line-3"></div>
+
+            <div class="step-indicator" id="step-nav-4">
+              <div class="step-circle">4</div>
+              <span class="step-name">Готово</span>
+            </div>
+          </nav>
+
+          <!-- Главная карточка мастера с внутренним скроллом -->
+          <div class="wizard-card">
+            <!-- ШАГ 1: Подключение контроллера -->
+            <section class="step-view active" id="view-step-1">
+            <div class="step-header">
+              <div class="step-title-row">
+                <span class="step-tag">Шаг 1 из 4</span>
+                <h2 class="step-title">Подключение контроллера ESP32-S3</h2>
+              </div>
+              <p class="step-desc">
+                Подключите ваш контроллер PixiFX (ESP32-S3 Zero) к компьютеру через кабель USB-C и нажмите кнопку подключения.
+              </p>
+            </div>
+
+            <div class="alert-box alert-warning">
+              <span class="alert-icon">⚠️</span>
+              <div>
+                <strong>Обратите внимание:</strong> данная версия прошивки скомпилирована и оптимизирована исключительно под аппаратную архитектуру <strong>ESP32-S3</strong> (двухъядерный Xtensa LX7, аппаратный RMT v2). На других ревизиях (ESP8266, ESP32 Classic, ESP32-C3) работа не поддерживается.
+              </div>
+            </div>
+
+            <!-- Предупреждение о запуске через file:// -->
+            <div id="protocol-warning" class="alert-box alert-warning" style="display: none;">
+              <span class="alert-icon">💡</span>
+              <div>
+                <strong>Запуск через локальный файл (file://):</strong> Браузеры блокируют загрузку модулей по протоколу <code>file:///</code>. Для полноценной работы откройте страницу через локальный сервер (например, VSCode Live Server, <code>python -m http.server</code> или после публикации на GitHub Pages).
+              </div>
+            </div>
+
+            <!-- Блок Web Serial проверки браузера -->
+            <div id="browser-warning" class="alert-box alert-warning" style="display: none;">
+              <span class="alert-icon">🚫</span>
+              <div>
+                Ваш браузер не поддерживает <strong>Web Serial API</strong>. Пожалуйста, используйте <strong>Google Chrome</strong>, <strong>Microsoft Edge</strong> или <strong>Opera</strong> для прошивки через USB.
+              </div>
+            </div>
+
+            <!-- Блок статуса подключения и информации о чипе -->
+            <div id="device-info-container" style="display: none;" class="device-info-grid">
+              <div class="info-item">
+                <span class="info-item-label">Микроконтроллер</span>
+                <span class="info-item-val" id="info-chip">ESP32-S3</span>
+              </div>
+              <div class="info-item">
+                <span class="info-item-label">Размер Flash</span>
+                <span class="info-item-val" id="info-flash">4 MB</span>
+              </div>
+              <div class="info-item">
+                <span class="info-item-label">MAC-Адрес</span>
+                <span class="info-item-val" id="info-mac">--:--:--:--:--:--</span>
+              </div>
+              <div class="info-item">
+                <span class="info-item-label">Скорость прошивки</span>
+                <span class="info-item-val" id="info-baud">921600 бод</span>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px;">
+              <button type="button" class="btn-action-pink" id="btn-connect">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                </svg>
+                <span id="btn-connect-text">Подключить ESP32-S3</span>
+              </button>
+
+              <button type="button" class="btn-action-cyan" id="btn-to-step-2" style="display: none;">
+                <span>Перейти к прошивке</span>
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </button>
+            </div>
+          </section>
+
+          <!-- ШАГ 2: Загрузка прошивки и LittleFS -->
+          <section class="step-view" id="view-step-2">
+            <div class="step-header">
+              <div class="step-title-row">
+                <span class="step-tag">Шаг 2 из 4</span>
+                <h2 class="step-title">Загрузка прошивки и файловой системы</h2>
+              </div>
+              <p class="step-desc">
+                Прошивка и файлы веб-интерфейса будут автоматически загружены с сервера и записаны во Flash-память контроллера в соответствии с таблицей разделов.
+              </p>
+            </div>
+
+            <!-- Список прошиваемых разделов -->
+            <div class="progress-card-group">
+              <!-- 1. Firmware -->
+              <div class="flasher-progress-card">
+                <div class="progress-header">
+                  <div class="progress-name">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--pink-neon);">
+                      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+                    </svg>
+                    <span>Прошивка микроконтроллера (firmware.bin)</span>
+                  </div>
+                  <span class="progress-pct" id="pct-firmware">0%</span>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill" id="fill-firmware"></div>
+                </div>
+                <div class="progress-meta">
+                  <span id="status-firmware">Ожидание запуска</span>
+                  <span>Смещение: 0x10000 (Factory App)</span>
+                </div>
+              </div>
+
+              <!-- 2. LittleFS -->
+              <div class="flasher-progress-card">
+                <div class="progress-header">
+                  <div class="progress-name">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--cyan-neon);">
+                      <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                      <polyline points="2 17 12 22 22 17"></polyline>
+                      <polyline points="2 12 12 17 22 12"></polyline>
+                    </svg>
+                    <span>Файловая система веб-интерфейса (littlefs.bin)</span>
+                  </div>
+                  <span class="progress-pct" id="pct-fs">0%</span>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill" id="fill-fs"></div>
+                </div>
+                <div class="progress-meta">
+                  <span id="status-fs">Ожидание запуска</span>
+                  <span>Смещение: 0x210000 (LittleFS)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Баннер статуса перезагрузки -->
+            <div id="reboot-notice" class="alert-box alert-info" style="display: none; margin-top: 14px;">
+              <span class="alert-icon">⚡</span>
+              <div>
+                <strong>Перезагрузка:</strong> Отправлен сигнал перезапуска контроллера. Если из-за специфики встроенного USB CDC контроллер не перезапустился автоматически, нажмите аппаратную кнопку <strong>RST</strong> на плате ESP32-S3.
+              </div>
+            </div>
+
+            <!-- Кнопки управления прошивкой -->
+            <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px;">
+              <button type="button" class="btn-action-pink" id="btn-start-flash">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                </svg>
+                <span id="btn-flash-text">Начать установку прошивки</span>
+              </button>
+
+              <button type="button" class="btn-action-secondary" id="btn-force-rst" style="display: none;" title="Послать импульс аппаратного сброса">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+                </svg>
+                <span>Импульс RST</span>
+              </button>
+
+              <button type="button" class="btn-action-cyan" id="btn-to-step-3" style="display: none;">
+                <span>Перейти к настройке Wi-Fi</span>
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </button>
+            </div>
+          </section>
+
+          <!-- ШАГ 3: Настройка Wi-Fi (Improv Serial + SoftAP) -->
+          <section class="step-view" id="view-step-3">
+            <div class="step-header">
+              <div class="step-title-row">
+                <span class="step-tag">Шаг 3 из 4</span>
+                <h2 class="step-title">Настройка Wi-Fi подключения</h2>
+              </div>
+              <p class="step-desc">
+                Передайте параметры вашей домашней Wi-Fi сети прямо в контроллер через Improv Serial или воспользуйтесь резервной точкой доступа.
+              </p>
+            </div>
+
+            <div class="wifi-setup-container">
+              <!-- Карточка параметров Wi-Fi в стиле data_src -->
+              <div class="settings-card">
+                <div class="settings-card-header">
+                  <div class="settings-card-icon">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M5 12.55a11 11 0 0 1 14.08 0"></path>
+                      <path d="M1.42 9a16 16 0 0 1 21.16 0"></path>
+                      <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+                      <line x1="12" y1="20" x2="12.01" y2="20"></line>
+                    </svg>
+                  </div>
+                  <h3 class="settings-card-title">Подключение к Wi-Fi сети (STA)</h3>
+                </div>
+
+                <div class="settings-grid">
+                  <!-- Строка 1: Поиск сетей -->
+                  <div class="settings-row">
+                    <label class="settings-label" for="wifi-scan-select">Поиск сетей:</label>
+                    <div class="settings-control">
+                      <div class="input-with-action">
+                        <select id="wifi-scan-select" class="form-select" style="display: none; flex: 1;">
+                          <option value="">Выберите найденную сеть...</option>
+                        </select>
+                        <button type="button" class="btn-refresh-devices" id="btn-scan-wifi" style="white-space: nowrap;">
+                          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <polyline points="1 20 1 14 7 14"></polyline>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                          </svg>
+                          <span>Сканировать сети</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Строка 2: Имя сети (SSID) -->
+                  <div class="settings-row">
+                    <label class="settings-label" for="wifi-ssid">Имя сети (SSID):</label>
+                    <div class="settings-control">
+                      <input type="text" id="wifi-ssid" class="form-input" placeholder="Введите имя сети (SSID)" maxlength="32" />
+                    </div>
+                  </div>
+
+                  <!-- Строка 3: Пароль сети -->
+                  <div class="settings-row">
+                    <label class="settings-label" for="wifi-pass">Пароль Wi-Fi:</label>
+                    <div class="settings-control">
+                      <div class="password-wrap">
+                        <input type="password" id="wifi-pass" class="form-input" placeholder="Пароль сети (если есть)" maxlength="64" />
+                        <button type="button" class="btn-pwd-eye" id="btn-toggle-wifi-pass" title="Показать/скрыть пароль">
+                          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 4px;">
+                <button type="button" class="btn-action-pink" id="btn-send-wifi">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M5 12.55a11 11 0 0 1 14.08 0"></path>
+                    <path d="M1.42 9a16 16 0 0 1 21.16 0"></path>
+                    <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+                    <line x1="12" y1="20" x2="12.01" y2="20"></line>
+                  </svg>
+                  <span id="btn-send-wifi-text">Подключить к Wi-Fi (Improv)</span>
+                </button>
+
+                <button type="button" class="btn-action-secondary" id="btn-skip-wifi">
+                  <span>Пропустить настройку</span>
+                </button>
+              </div>
+
+              <!-- Блок альтернативной настройки через SoftAP -->
+              <div class="ap-info-card">
+                <div class="ap-header-row">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  </svg>
+                  <span>Альтернативная настройка через точку доступа (Access Point):</span>
+                </div>
+                <div style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5;">
+                  Если вы не хотите передавать Wi-Fi через браузер, найдите со смартфона или ПК беспроводную сеть контроллера:
+                </div>
+                <div class="ap-highlight-box">
+                  <div>
+                    <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Имя сети (без пароля):</div>
+                    <div class="ap-ssid-value" id="ap-ssid-display">PixiFXSetup_XXXXXXXX</div>
+                  </div>
+                  <button type="button" class="btn-copy" id="btn-copy-ap" title="Копировать префикс сети">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                    <span id="copy-btn-text">Копировать</span>
+                  </button>
+                </div>
+                <div style="font-size: 12px; color: var(--text-muted);">
+                  После подключения перейдите в браузере по адресу: <strong style="color: var(--cyan-neon);">http://10.10.1.1</strong> или <strong style="color: var(--cyan-neon);">http://pixifx.local</strong>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ШАГ 4: Открыть интерфейс устройства -->
+          <section class="step-view" id="view-step-4">
+            <div class="success-card">
+              <div class="success-icon-wrap">
+                <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </div>
+
+              <h2 class="success-title">PixiFX успешно установлен!</h2>
+              <p class="success-subtitle">
+                Контроллер готов к работе. Теперь вы можете открыть веб-интерфейс для настройки светодиодных лент, выбора протоколов управления (DDP / sACN / Art-Net) и визуальных эффектов.
+              </p>
+
+              <div class="device-link-card">
+                <div class="info-item" style="text-align: left;">
+                  <span class="info-item-label">IP адрес контроллера в сети:</span>
+                  <span class="info-item-val" id="final-device-ip" style="font-size: 18px;">10.10.1.1</span>
+                </div>
+
+                <a href="http://10.10.1.1" target="_blank" rel="noopener noreferrer" class="btn-action-cyan" id="btn-open-webui" style="height: 48px; font-size: 15px;">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                    <polyline points="15 3 21 3 21 9"></polyline>
+                    <line x1="10" y1="14" x2="21" y2="3"></line>
+                  </svg>
+                  <span>Открыть Web UI PixiFX</span>
+                </a>
+              </div>
+
+              <button type="button" class="btn-action-secondary" id="btn-restart-wizard" style="margin-top: 10px;">
+                <span>Прошить другое устройство</span>
+              </button>
+            </div>
+          </section>
+
+          <!-- РЕЖИМ ТОЛЬКО НАСТРОЙКИ WI-FI -->
+          <section class="step-view" id="view-wifi-standalone">
+            <div class="step-header">
+              <div class="step-title-row">
+                <span class="step-tag" style="background: rgba(0, 240, 255, 0.2); border-color: var(--cyan-neon); color: var(--cyan-neon);">Wi-Fi Setup</span>
+                <h2 class="step-title">Настройка Wi-Fi подключения</h2>
+              </div>
+              <p class="step-desc">
+                Быстрая настройка или смена параметров Wi-Fi сети для уже прошитого контроллера PixiFX через Improv Serial.
+              </p>
+            </div>
+
+            <!-- Блок подключения если COM порт не открыт -->
+            <div id="wifi-only-connect-block" class="alert-box alert-info">
+              <span class="alert-icon">🔌</span>
+              <div style="flex: 1;">
+                <strong>Подключение по USB:</strong> Выберите COM-порт вашего контроллера для передачи параметров Wi-Fi по протоколу Improv Serial.
+              </div>
+              <button type="button" class="btn-action-cyan" id="btn-wifi-only-connect" style="height: 34px; padding: 0 14px; font-size: 12px;">
+                <span>Подключить</span>
+              </button>
+            </div>
+
+            <!-- Блок информации об устройстве -->
+            <div id="wifi-only-device-info" style="display: none;" class="device-info-grid">
+              <div class="info-item">
+                <span class="info-item-label">Устройство</span>
+                <span class="info-item-val" id="wifi-only-info-name">PixiFX</span>
+              </div>
+              <div class="info-item">
+                <span class="info-item-label">Прошивка</span>
+                <span class="info-item-val" id="wifi-only-info-fw">v1.0.0</span>
+              </div>
+              <div class="info-item">
+                <span class="info-item-label">Чип</span>
+                <span class="info-item-val" id="wifi-only-info-chip">ESP32-S3</span>
+              </div>
+              <div class="info-item">
+                <span class="info-item-label">Текущий статус</span>
+                <span class="info-item-val" id="wifi-only-info-state">Ready</span>
+              </div>
+            </div>
+
+            <div class="wifi-setup-container">
+              <!-- Карточка параметров Wi-Fi в стиле data_src -->
+              <div class="settings-card">
+                <div class="settings-card-header">
+                  <div class="settings-card-icon">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M5 12.55a11 11 0 0 1 14.08 0"></path>
+                      <path d="M1.42 9a16 16 0 0 1 21.16 0"></path>
+                      <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+                      <line x1="12" y1="20" x2="12.01" y2="20"></line>
+                    </svg>
+                  </div>
+                  <h3 class="settings-card-title">Подключение к Wi-Fi сети (STA)</h3>
+                </div>
+
+                <div class="settings-grid">
+                  <!-- Строка 1: Поиск сетей -->
+                  <div class="settings-row">
+                    <label class="settings-label" for="wifi-only-scan-select">Поиск сетей:</label>
+                    <div class="settings-control">
+                      <div class="input-with-action">
+                        <select id="wifi-only-scan-select" class="form-select" style="display: none; flex: 1;">
+                          <option value="">Выберите найденную сеть...</option>
+                        </select>
+                        <button type="button" class="btn-refresh-devices" id="btn-wifi-only-scan" style="white-space: nowrap;">
+                          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <polyline points="1 20 1 14 7 14"></polyline>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                          </svg>
+                          <span id="btn-wifi-only-scan-text">Сканировать сети</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Строка 2: Имя сети (SSID) -->
+                  <div class="settings-row">
+                    <label class="settings-label" for="wifi-only-ssid">Имя сети (SSID):</label>
+                    <div class="settings-control">
+                      <input type="text" id="wifi-only-ssid" class="form-input" placeholder="Введите имя сети (SSID)" maxlength="32" />
+                    </div>
+                  </div>
+
+                  <!-- Строка 3: Пароль сети -->
+                  <div class="settings-row">
+                    <label class="settings-label" for="wifi-only-pass">Пароль Wi-Fi:</label>
+                    <div class="settings-control">
+                      <div class="password-wrap">
+                        <input type="password" id="wifi-only-pass" class="form-input" placeholder="Пароль сети (если есть)" maxlength="64" />
+                        <button type="button" class="btn-pwd-eye" id="btn-wifi-only-toggle-pass" title="Показать пароль">
+                          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Кнопка отправки -->
+              <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                <button type="button" class="btn-action-pink" id="btn-wifi-only-send">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M5 12.55a11 11 0 0 1 14.08 0"></path>
+                    <path d="M1.42 9a16 16 0 0 1 21.16 0"></path>
+                    <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+                    <line x1="12" y1="20" x2="12.01" y2="20"></line>
+                  </svg>
+                  <span id="btn-wifi-only-send-text">Подключить к Wi-Fi (Improv)</span>
+                </button>
+              </div>
+
+              <!-- Успешное подключение -->
+              <div id="wifi-only-success-box" class="device-link-card" style="display: none; max-width: 100%; margin-top: 4px;">
+                <div class="info-item" style="text-align: left;">
+                  <span class="info-item-label">Контроллер успешно подключен к Wi-Fi! IP адрес:</span>
+                  <span class="info-item-val" id="wifi-only-final-ip" style="font-size: 18px;">192.168.1.100</span>
+                </div>
+                <a href="http://10.10.1.1" target="_blank" rel="noopener noreferrer" class="btn-action-cyan" id="btn-wifi-only-open-webui" style="height: 44px; font-size: 14px;">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                    <polyline points="15 3 21 3 21 9"></polyline>
+                    <line x1="10" y1="14" x2="21" y2="3"></line>
+                  </svg>
+                  <span>Открыть Web UI PixiFX</span>
+                </a>
+              </div>
+
+              <!-- Альтернативная SoftAP -->
+              <div class="ap-info-card">
+                <div class="ap-header-row">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  </svg>
+                  <span>Резервная точка доступа (SoftAP):</span>
+                </div>
+                <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.45;">
+                  Если контроллер не настроен, подключитесь к его сети <strong>PixiFXSetup_XXXXXXXX</strong> (без пароля) и откройте <strong style="color: var(--cyan-neon);">http://10.10.1.1</strong> или <strong style="color: var(--cyan-neon);">http://pixifx.local</strong>.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Сворачиваемая консоль логов Serial (стиль data_src) -->
+          <div class="terminal-drawer">
+            <div class="terminal-header" id="btn-toggle-terminal">
+              <div class="terminal-title">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="4 17 10 11 4 5"></polyline>
+                  <line x1="12" y1="19" x2="20" y2="19"></line>
+                </svg>
+                <span>Журнал прошивки и Serial-консоль</span>
+              </div>
+              <button type="button" class="btn-refresh-devices" id="btn-clear-terminal" style="padding: 2px 8px; font-size: 10px;">
+                Очистить
+              </button>
+            </div>
+            <div class="terminal-body" id="terminal-output">PixiFX Web Flasher готов к работе...
+</div>
+          </div>
+        </div>
+      </main>
+
+      <!-- Подвал (полное соответствие data_src) -->
+      <footer class="app-footer">
+        <div class="footer-left">
+          <div class="net-info-pill">
+            <svg
+              class="icon-net"
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+              <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+              <line x1="6" y1="6" x2="6.01" y2="6"></line>
+              <line x1="6" y1="18" x2="6.01" y2="18"></line>
+            </svg>
+            <span class="ip-val" id="footer-port-info">Web Serial / CDC</span>
+            <span class="pill-slash">/</span>
+            <span class="host-val" id="footer-chip-info">ESP32-S3 Zero</span>
+          </div>
+        </div>
+
+        <div class="footer-right">
+          <a href="https://github.com/vktrsansara/PixiFX_Firmware_esp32" target="_blank" rel="noopener noreferrer" class="footer-link">PixiFX GitHub</a>
+        </div>
+      </footer>
+    </div>
+
+    <!-- Модульный скрипт управления -->
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
