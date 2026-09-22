@@ -39,8 +39,10 @@ async function loadEsptool() {
 
 // Константы смещений прошивки (согласно partitions.csv)
 const FLASH_OFFSETS = {
-  FIRMWARE: 0x10000,   // Factory App
-  LITTLEFS: 0x210000   // LittleFS Web UI
+  BOOTLOADER: 0x0000,   // Загрузчик ESP-IDF
+  PARTITIONS: 0x8000,   // Таблица разделов
+  FIRMWARE: 0x10000,    // Factory App
+  LITTLEFS: 0x210000    // LittleFS Web UI
 };
 
 // Константы протокола Improv Serial (согласно https://www.improv-wifi.com/serial/)
@@ -401,8 +403,20 @@ async function flashDevice() {
   ui.statusFs.textContent = "Ожидание...";
 
   try {
-    // 1. Скачиваем firmware.bin и littlefs.bin (из ./bin/ или web/bin/)
-    let firmwareBuffer, littlefsBuffer;
+    // 1. Скачиваем бинарные файлы (bootloader, partitions, firmware, littlefs)
+    let bootloaderBuffer = null, partitionsBuffer = null, firmwareBuffer = null, littlefsBuffer = null;
+
+    try {
+      bootloaderBuffer = await fetchBinary("./bin/bootloader.bin");
+    } catch (e) {
+      try { bootloaderBuffer = await fetchBinary("bin/bootloader.bin"); } catch (e2) {}
+    }
+
+    try {
+      partitionsBuffer = await fetchBinary("./bin/partitions.bin");
+    } catch (e) {
+      try { partitionsBuffer = await fetchBinary("bin/partitions.bin"); } catch (e2) {}
+    }
     
     try {
       firmwareBuffer = await fetchBinary("./bin/firmware.bin");
@@ -418,21 +432,28 @@ async function flashDevice() {
       littlefsBuffer = await fetchBinary("bin/littlefs.bin");
     }
 
-    const fileArray = [
-      { data: bufferToBinaryString(firmwareBuffer), address: FLASH_OFFSETS.FIRMWARE },
-      { data: bufferToBinaryString(littlefsBuffer), address: FLASH_OFFSETS.LITTLEFS }
-    ];
+    const fileArray = [];
+    if (bootloaderBuffer) {
+      fileArray.push({ data: bufferToBinaryString(bootloaderBuffer), address: FLASH_OFFSETS.BOOTLOADER });
+    }
+    if (partitionsBuffer) {
+      fileArray.push({ data: bufferToBinaryString(partitionsBuffer), address: FLASH_OFFSETS.PARTITIONS });
+    }
+    const fwFileIndex = fileArray.length;
+    fileArray.push({ data: bufferToBinaryString(firmwareBuffer), address: FLASH_OFFSETS.FIRMWARE });
+    const fsFileIndex = fileArray.length;
+    fileArray.push({ data: bufferToBinaryString(littlefsBuffer), address: FLASH_OFFSETS.LITTLEFS });
 
     logTerminal("Переключение скорости на 921600 бод для быстрой прошивки...");
     
     // Функция обратного вызова прогресса
     const calculateProgress = (fileIndex, written, total) => {
       const pct = Math.floor((written / total) * 100);
-      if (fileIndex === 0) {
+      if (fileIndex === fwFileIndex) {
         ui.pctFirmware.textContent = `${pct}%`;
         ui.fillFirmware.style.width = `${pct}%`;
         ui.statusFirmware.textContent = `Запись прошивки: ${Math.round(written / 1024)} / ${Math.round(total / 1024)} КБ`;
-      } else if (fileIndex === 1) {
+      } else if (fileIndex === fsFileIndex) {
         ui.pctFs.textContent = `${pct}%`;
         ui.fillFs.style.width = `${pct}%`;
         ui.statusFs.textContent = `Запись LittleFS: ${Math.round(written / 1024)} / ${Math.round(total / 1024)} КБ`;
@@ -455,7 +476,7 @@ async function flashDevice() {
       }
     });
 
-    logTerminal("Прошивка и файловая система LittleFS успешно записаны!", "success");
+    logTerminal("Загрузчик, таблица разделов, прошивка и LittleFS успешно записаны!", "success");
     ui.pctFirmware.textContent = "100%";
     ui.fillFirmware.style.width = "100%";
     ui.fillFirmware.classList.remove("active");
